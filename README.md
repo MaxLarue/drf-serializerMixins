@@ -86,6 +86,8 @@ mixin with this and specifying a toRemove iterable in the Meta class of the seri
 ## ReadNestedWriteFlatMixin
 A problem with drf is when you want to output nested representation while still using ModelSerializer. One solution is the depth option, but then you'll have to deal with writing nested. This mixins allows to serialize object to nested representation but when deserializing data to create an object, will use primary keys.
 
+Note that you must explicitly define which field are to be nested in the meta class!
+
 Example:
 ```python
   class UserSerializer(serializers.ModelSerializer):
@@ -93,10 +95,11 @@ Example:
       model = User
       fields = ("__all__",)
       
-  class ToDoSerializer(serializers.ModelSerializer):
+  class ToDoSerializer(ReadNestedWriteFlatMixin, serializers.ModelSerializer):
     class Meta:
       model = ToDo
       fields = ("__all__",)
+      read_nested_fields = ("creator",)
       
 ```
 
@@ -118,3 +121,64 @@ but in order to post a ToDo you can simply
 ```python
   {"what": "write docs", "when": "2018-04-30T19:25:20.119974Z", creator: 1}
 ```
+
+##More complex example:
+```python
+  class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+      model = User
+      fields = ("__all__",)
+      
+  class ToDoSerializer(WithHashSerializerMixin,
+                       CreatorIsAuthenticatedUserMixin,
+                       ReadNestedWriteFlatMixin,
+                       serializers.ModelSerializer):
+    class Meta:
+      model = ToDo
+      fields = ("__all__",)
+```
+
+Let's say we have a user account (id: 15, username: bar)
+posting
+```python
+  {"what": "write docs", "when": "2018-04-30T19:25:20.119974Z"}
+```
+Creates our first todo
+
+then get /ToDos/1/ returns
+```python
+  {
+    "id": 1, 
+    "what": "write docs", 
+    "when": "2018-04-30T19:25:20.119974Z",
+    "creator" : {
+      "id": 15,
+      "username": "bar",
+      ...
+    },
+    "hash": 18444959599595944
+  }
+```
+
+And if we simply need to patch the todo (we give it to someone else)
+
+patch /ToDos/1/ with
+```python
+  {creator: 5}
+```
+
+then get /ToDos/1/ returns
+```python
+  {
+    "id": 1, 
+    "what": "write docs", 
+    "when": "2018-04-30T19:25:20.119974Z",
+    "creator" : {
+      "id": 5,
+      "username": "foo",
+      ...
+    },
+    "hash": 18444959599595944
+  }
+```
+
