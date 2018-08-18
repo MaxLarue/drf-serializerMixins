@@ -1,5 +1,5 @@
 # drf-serializerMixins
-A few mixins to use with django-rest-framework's ModelSerializer
+A few mixins to use with [django-rest-framework](http://www.django-rest-framework.org/)'s ModelSerializer
 
 
 ## WithHashSerializerMixin
