@@ -81,3 +81,40 @@ mixin with this and specifying a toRemove iterable in the Meta class of the seri
       fields = ("__all__",)
       toRemove = ("username",)
 ```
+
+
+## ReadNestedWriteFlatMixin
+A problem with drf is when you want to output nested representation while still using ModelSerializer. One solution is the depth option, but then you'll have to deal with writing nested. This mixins allows to serialize object to nested representation but when deserializing data to create an object, will use primary keys.
+
+Example:
+```python
+  class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+      model = User
+      fields = ("__all__",)
+      
+  class ToDoSerializer(serializers.ModelSerializer):
+    class Meta:
+      model = ToDo
+      fields = ("__all__",)
+      
+```
+
+serializing a todo object to JSON will look like this
+```python
+  {
+    "id": 1, 
+    "what": "write docs", 
+    "when": "2018-04-30T19:25:20.119974Z",
+    "creator" : {
+      "id": 1,
+      "username": "foobar",
+      ...
+    }
+  }
+```
+
+but in order to post a ToDo you can simply
+```python
+  {"what": "write docs", "when": "2018-04-30T19:25:20.119974Z", creator: 1}
+```
